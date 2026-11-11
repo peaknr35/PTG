@@ -1,0 +1,622 @@
+<title>Practice-to-Game Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a film-room scouting sheet. Timecode labels, gym-tape marks, one live race clock. */
+:root {
+  --bg: #f3f5f4;
+  --surface: #ffffff;
+  --fg: #14191c;
+  --muted: #56636c;
+  --line: #d3dade;
+  --tape: #d9a400;
+  --tape-soft: #f6e7b3;
+  --court: #1d5aa6;
+  --court-soft: #dde8f6;
+  --warn: #b4321f;
+  --ok: #1f7a4a;
+  --display: "Saira Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1215; --surface: #161c20; --fg: #e6ebee; --muted: #9aa7b0; --line: #2a343a;
+    --tape: #f0c22e; --tape-soft: #3a3214; --court: #7fb0ff; --court-soft: #16273d;
+    --warn: #ff8a73; --ok: #63d394; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1215; --surface: #161c20; --fg: #e6ebee; --muted: #9aa7b0; --line: #2a343a;
+  --tape: #f0c22e; --tape-soft: #3a3214; --court: #7fb0ff; --court-soft: #16273d;
+  --warn: #ff8a73; --ok: #63d394; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+section { padding-block: 56px; border-top: 1px solid var(--line); }
+h1, h2, h3 { font-family: var(--display); line-height: 1.02; text-wrap: balance; margin: 0; letter-spacing: 0.01em; }
+h1 { font-size: clamp(2.8rem, 8vw, 5.4rem); font-weight: 800; text-transform: uppercase; }
+h2 { font-size: clamp(2rem, 4.6vw, 3rem); font-weight: 700; text-transform: uppercase; }
+h3 { font-size: 1.45rem; font-weight: 700; }
+p { margin: 0; max-width: 65ch; }
+.tc { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.stack { display: grid; gap: 16px; }
+.lede { font-size: 1.15rem; color: var(--muted); }
+.tape { background: linear-gradient(transparent 58%, var(--tape-soft) 58%); padding: 0 2px; }
+a { color: var(--court); }
+:focus-visible { outline: 3px solid var(--tape); outline-offset: 2px; }
+
+/* hero */
+.hero { padding-block: 64px 48px; border-top: 0; }
+.hero .stack { gap: 22px; }
+.hero h1 .q { display: block; }
+.hero h1 .mark { color: var(--court); }
+.meta { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; color: var(--muted); background: var(--surface); }
+.chip.now { border-color: var(--tape); color: var(--fg); background: var(--tape-soft); }
+
+/* KNOW SEE DO GAME */
+.ksdg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); background: var(--surface); }
+.ksdg > div { padding: 20px 18px; border-right: 1px solid var(--line); display: grid; gap: 8px; align-content: start; min-width: 0; }
+.ksdg > div:last-child { border-right: 0; }
+.ksdg .word { font-family: var(--display); font-size: 2.2rem; font-weight: 800; line-height: 1; }
+.ksdg .gap { color: var(--warn); }
+.bar { height: 8px; background: var(--line); position: relative; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--court); }
+.bar.low i { background: var(--warn); }
+@media (max-width: 720px) { .ksdg { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ksdg > div:nth-child(2) { border-right: 0; } .ksdg > div:nth-child(-n+2) { border-bottom: 1px solid var(--line); } }
+
+/* loop diagram */
+.loops { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.loop { background: var(--surface); border: 1px solid var(--line); padding: 20px; display: grid; gap: 10px; min-width: 0; }
+.loop.broken { border-color: var(--warn); }
+.loop code { font-family: var(--mono); font-size: 0.85rem; white-space: normal; }
+.tag { font-family: var(--mono); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+.tag.ok { color: var(--ok); } .tag.bad { color: var(--warn); }
+@media (max-width: 720px) { .loops { grid-template-columns: 1fr; } }
+
+/* the chain */
+.chain { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-left: 3px solid var(--tape); }
+.chain li { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; padding: 14px 0 14px 18px; border-bottom: 1px dashed var(--line); }
+.chain li:last-child { border-bottom: 0; }
+.chain .n { font-family: var(--display); font-weight: 800; font-size: 1.8rem; color: var(--court); line-height: 1; }
+.chain b { display: block; font-weight: 600; }
+.chain span { color: var(--muted); }
+
+/* tables */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 0.95rem; }
+th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+tr:last-child td { border-bottom: 0; }
+tr.ptg td { background: var(--court-soft); font-weight: 600; }
+
+/* grades */
+.grades { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.grade { border: 1px solid var(--line); background: var(--surface); padding: 16px; display: grid; gap: 6px; min-width: 0; }
+.grade .g { font-family: var(--display); font-size: 2.4rem; font-weight: 800; line-height: 1; }
+.grade.p { border-color: var(--ok); } .grade.p .g { color: var(--ok); }
+@media (max-width: 720px) { .grades { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.never { display: flex; flex-wrap: wrap; gap: 8px; }
+.never span { border: 1px solid var(--warn); color: var(--warn); padding: 4px 10px; font-size: 0.88rem; }
+
+/* the lab */
+.lab { display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .lab { grid-template-columns: 1fr; } }
+.lab-out { display: grid; gap: 16px; min-width: 0; }
+.ctl { display: grid; gap: 4px; min-width: 0; }
+.ctl label { font-weight: 600; font-size: 0.92rem; display: flex; justify-content: space-between; gap: 8px; }
+.ctl output { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--court); white-space: nowrap; }
+.ctl small { color: var(--muted); font-size: 0.8rem; }
+.group-label { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 12px; }
+input[type=range] { width: 100%; accent-color: var(--court); }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font: inherit; font-size: 0.88rem; font-weight: 600; border: 1px solid var(--line); background: var(--bg); color: var(--fg); padding: 7px 12px; cursor: pointer; }
+.btn:hover { border-color: var(--court); }
+.btn.primary { background: var(--court); border-color: var(--court); color: var(--surface); }
+.btn[aria-pressed="true"] { border-color: var(--tape); background: var(--tape-soft); }
+.compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 520px) { .compare { grid-template-columns: 1fr; } }
+.cbox { background: var(--surface); border: 1px solid var(--line); padding: 14px 16px; display: grid; gap: 4px; min-width: 0; }
+.cbox.gym { border-top: 3px solid var(--court); }
+.cbox.live { border-top: 3px solid var(--warn); }
+.cbox .big { font-family: var(--display); font-weight: 800; font-size: 2.1rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.court { width: 100%; height: auto; background: var(--surface); border: 1px solid var(--line); display: block; }
+.svg-frame { fill: none; stroke: var(--line); }
+.svg-hoop { fill: none; stroke: var(--tape); stroke-width: 3; }
+.svg-cone { fill: var(--court); opacity: 0.13; }
+.svg-boundary { fill: none; stroke: var(--tape); stroke-dasharray: 5 5; stroke-width: 2; }
+.svg-route { stroke: var(--warn); stroke-width: 2; }
+.svg-start { fill: var(--warn); opacity: 0.45; }
+.svg-finish { fill: var(--warn); }
+.svg-shooter { fill: var(--court); }
+.svg-label { fill: var(--muted); font-family: var(--mono); font-size: 12px; }
+.breakdown { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; background: var(--surface); border: 1px solid var(--line); }
+.breakdown li { padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.breakdown li:last-child { border-bottom: 0; }
+.breakdown b { font-weight: 600; }
+.lab-lower { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 860px) { .lab-lower { grid-template-columns: 1fr; } }
+.exp { border-left: 3px solid var(--tape); padding: 8px 0 8px 14px; display: grid; gap: 4px; }
+.exp h4 { margin: 0; font-size: 1rem; }
+textarea { width: 100%; min-height: 84px; font: inherit; font-size: 0.95rem; padding: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); resize: vertical; }
+.delta { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 0; }
+.delta td, .delta th { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+.delta .chg { color: var(--warn); font-weight: 600; }
+.delta .same { color: var(--ok); }
+.verdict { border-left: 4px solid var(--tape); padding: 10px 14px; background: var(--tape-soft); }
+.verdict strong { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.fine { font-size: 0.85rem; color: var(--muted); }
+
+/* roadmap */
+.phases { display: grid; gap: 0; border: 1px solid var(--line); background: var(--surface); }
+.phase { display: grid; grid-template-columns: 70px minmax(0, 1fr) minmax(0, 1fr); gap: 16px; padding: 16px; border-bottom: 1px solid var(--line); }
+.phase:last-child { border-bottom: 0; }
+.phase .n { font-family: var(--display); font-weight: 800; font-size: 1.6rem; line-height: 1; color: var(--muted); }
+.phase.now { background: var(--tape-soft); }
+.phase.now .n { color: var(--fg); }
+.phase .gate { font-size: 0.9rem; color: var(--muted); }
+.phase .gate::before { content: "Gate: "; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg); }
+@media (max-width: 720px) { .phase { grid-template-columns: 52px minmax(0, 1fr); } .phase .gate { grid-column: 2; } }
+
+/* todo */
+.todo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 720px) { .todo { grid-template-columns: 1fr; } }
+.todo ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.todo li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; align-items: start; }
+.todo input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--court); }
+.panel { background: var(--surface); border: 1px solid var(--line); padding: 20px; display: grid; gap: 14px; min-width: 0; }
+
+.reqs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .reqs { grid-template-columns: 1fr; } }
+.req { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); }
+.req .id { font-family: var(--mono); font-size: 0.82rem; color: var(--court); font-weight: 500; }
+
+footer { padding-block: 40px 56px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
+@media (prefers-reduced-motion: no-preference) { .rail i, .bar i { transition: width .25s ease; } }
+</style>
+
+<main>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="stack">
+      <span class="tc">Film room · concept sheet · v1.0</span>
+      <h1><span class="q">Does your practice</span><span class="q mark">survive a defender?</span></h1>
+      <p class="lede">Practice-to-Game Lab is a reasoning mentor for players who want to get better but don't know what to work on. It learns from your own mistakes, teaches the reasoning behind the fix, gives you a way to practice it, checks whether it shows up in your next game, and only calls advice <span class="tape">proven for you</span> after it holds on a retest.</p>
+      <div class="meta">
+        <span class="chip now">Phase 0 · measuring by hand</span>
+        <span class="chip">Learning lab + portfolio</span>
+        <span class="chip">No code yet, on purpose</span>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <div class="stack">
+      <span class="tc">00:01 · The gap</span>
+      <h2>You can work hard and still not know what to fix</h2>
+      <p>Most players who want to improve put in the hours: drills, film, pickup. Without someone who can look at their mistakes and say "work on this, and here's why," the same mistakes keep showing up in games. The game asks for three different things, and practice without guidance mostly builds one.</p>
+      <div class="ksdg" role="list">
+        <div role="listitem"><span class="tc">Built by film study</span><span class="word">Know</span><span>Understanding what a good play looks like.</span><div class="bar"><i style="width:85%"></i></div></div>
+        <div role="listitem"><span class="tc">Built by almost nothing</span><span class="word gap">See</span><span>Spotting the cue in time, before you act.</span><div class="bar low"><i style="width:15%"></i></div></div>
+        <div role="listitem"><span class="tc">Built a little by drills</span><span class="word">Do</span><span>Executing it with a defender closing in.</span><div class="bar low"><i style="width:35%"></i></div></div>
+        <div role="listitem"><span class="tc">The only real test</span><span class="word">Game</span><span>Where seeing and doing have to work together.</span><div class="bar"><i style="width:0%"></i></div></div>
+      </div>
+      <p class="fine">Bars are an illustration of the founder's own experience, not measured data.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="stack">
+      <span class="tc">00:02 · The system</span>
+      <h2>The loop that never closes</h2>
+      <p>Seen as a system, solo training has a loop that runs fine and a loop that's broken. Every product in this space speeds up the first one. PTG exists to close the second.</p>
+      <div class="loops">
+        <div class="loop"><span class="tag ok">Runs on its own</span><h3>Practice loop</h3><code>practice → gym skill → confidence → more practice</code><p class="fine">Feels like progress. Workout apps tune this loop: more reps, better plans.</p></div>
+        <div class="loop broken"><span class="tag bad">Broken today</span><h3>Game loop</h3><code>game mistake → noticed → practice changed → better game</code><p class="fine">Game results almost never come back into practice. A mistake on Saturday gets fixed weeks later, or never.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="stack">
+      <span class="tc">00:02b · Your mistakes, every part of the game</span>
+      <h2>One priority, with the reasoning</h2>
+      <p>You log the moments that went wrong. PTG finds the one that keeps repeating in games and explains it in three layers, so you learn to reason through the fix yourself.</p>
+      <div class="grades">
+        <div class="grade"><span class="g">1</span><b>The read</b><span class="fine">What to notice before you act.</span></div>
+        <div class="grade"><span class="g">2</span><b>The why</b><span class="fine">What the defense or situation is giving you.</span></div>
+        <div class="grade"><span class="g">3</span><b>The how</b><span class="fine">What to do, and how to practice it.</span></div>
+        <div class="grade p"><span class="g">✓</span><b>The check</b><span class="fine">Did it show up in your next game?</span></div>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Skill area</th><th>Example mistake</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr class="ptg"><td>Shooting under a closeout</td><td>Rushed release; shot when the drive was open</td><td>First, being measured by hand now</td></tr>
+            <tr><td>Reading plays</td><td>Missed the open teammate; read came too late</td><td>Next</td></tr>
+            <tr><td>Playmaking</td><td>Picked up the dribble; forced the pass</td><td>Planned</td></tr>
+            <tr><td>Off-ball</td><td>Stood still; relocated into help</td><td>Planned</td></tr>
+            <tr><td>On-ball defense</td><td>Beat off the dribble; bit on the fake</td><td>Planned</td></tr>
+            <tr><td>Help defense and rim protection</td><td>Late rotation; fouled on the block attempt</td><td>Planned</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fine">Same method for every area. Each area opens once its reads and cues have been checked, so nothing ships as a guess.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="stack">
+      <span class="tc">00:03 · The chain</span>
+      <h2>Seven steps, one loop</h2>
+      <p>Every lesson runs the whole chain. Skip a step and it stops being PTG.</p>
+      <ol class="chain">
+        <li><span class="n">01</span><div><b>Pause before the decision</b><span>A clip freezes just before the read. You commit to an answer first.</span></div></li>
+        <li><span class="n">02</span><div><b>Name the cue</b><span>The reveal shows what to look at and at least one other good option, from a coach's notes.</span></div></li>
+        <li><span class="n">03</span><div><b>Beginner version</b><span>The pro's read, cut down to the version you can run at your level.</span></div></li>
+        <li><span class="n">04</span><div><b>Your own film</b><span>The same read in your clips, makes next to misses, with honest error bars.</span></div></li>
+        <li><span class="n">05</span><div><b>Floor rep</b><span>One solo rep that fits your space, time and partner, with a cue that fades.</span></div></li>
+        <li><span class="n">06</span><div><b>Game assignment + tag</b><span>What to look for next game, logged in ten seconds: saw it, acted, outcome.</span></div></li>
+        <li><span class="n">07</span><div><b>Retest</b><span>A delayed, cue-free check. Only then does the lesson become "proven for you."</span></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="stack">
+      <span class="tc">00:04 · Not a copycat</span>
+      <h2>Everyone owns one link</h2>
+      <p>Based on public app listings and vendor pages. Each category does one part of the chain well and stops there.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Category</th><th>Examples</th><th>Covers</th><th>Stops at</th></tr></thead>
+          <tbody>
+            <tr><td>Shot tracking</td><td>HomeCourt, Ballogy, Shotlab</td><td>Makes, misses, shot charts</td><td>The empty gym</td></tr>
+            <tr><td>Form scoring</td><td>Monona, Jumpshot AI</td><td>Mechanics vs. a pro</td><td>Copies the body, not the read</td></tr>
+            <tr><td>Workout plans</td><td>HoopStack, HooperLab</td><td>Adaptive drills</td><td>Never checks games</td></tr>
+            <tr><td>Basketball IQ</td><td>HooperIQ, THINK, Pick &amp; Roll</td><td>Pause-and-predict quizzes</td><td>The quiz</td></tr>
+            <tr><td>VR / first-person</td><td>Rezzil, Beyond Sports</td><td>Immersive reads</td><td>Headsets, team budgets</td></tr>
+            <tr class="ptg"><td>Practice-to-Game Lab</td><td>—</td><td>The whole chain, steps 01–07</td><td>Only claims what a retest proves</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="stack">
+      <span class="tc">00:05 · Honesty is the feature</span>
+      <h2>Every card shows its grade</h2>
+      <p>AI coaches sound sure of everything. PTG labels how well each piece of advice is supported, and it can say "can't tell."</p>
+      <div class="grades">
+        <div class="grade"><span class="g">A</span><b>Strong research</b><span class="fine">Meta-analyses or trials, tested for transfer.</span></div>
+        <div class="grade"><span class="g">B</span><b>Early research</b><span class="fine">Small studies, one sport, or youth only.</span></div>
+        <div class="grade"><span class="g">C</span><b>Coach's call</b><span class="fine">Coaching practice or a hypothesis to test.</span></div>
+        <div class="grade p"><span class="g">P</span><b>Proven for you</b><span class="fine">Held on your own delayed retest.</span></div>
+      </div>
+      <div class="panel">
+        <h3>Who checks the advice</h3>
+        <p>Right now there's no coach in the loop, so every card goes through two checks before a player sees it:</p>
+        <ol class="chain" style="border-left-color: var(--court)">
+          <li><span class="n">1</span><div><b>Automatic claim audit</b><span>Every number traces to a measurement, every claim carries its grade, and nothing PTG never claims gets through.</span></div></li>
+          <li><span class="n">2</span><div><b>Founder review</b><span>The founder, an experienced player but not a certified coach, reads it. Reviewed advice is labeled <b>C · coach's call</b> until your own retest makes it <b>P · proven for you</b>.</span></div></li>
+        </ol>
+        <p class="fine">Only cards that change what you do next get reviewed. When review time outgrows the founder's weekly limit, or the pilot passes five players, this step moves to a coach partner or a coach-review tier.</p>
+      </div>
+      <h3>What PTG never claims</h3>
+      <div class="never"><span>Why one shot missed</span><span>That a drill transfers, before a game shows it</span><span>Numbers it didn't measure</span><span>What a pro was thinking</span><span>Medical advice</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="stack">
+      <span class="tc">00:06 · The lab</span>
+      <h2>Why the empty gym lies</h2>
+      <p>In an empty gym nobody closes out, so a slow release never gets punished. Build a scenario, compare the empty gym with live defense, and get one experiment to try. It's a "what if" model: it shows time and space, never why you missed.</p>
+      <div class="lab">
+        <div class="panel">
+          <div class="stack">
+            <h3>Build your scenario</h3>
+            <div class="presets" role="group" aria-label="Demo scenarios">
+              <button class="btn" type="button" data-preset="corner">Corner 3</button>
+              <button class="btn" type="button" data-preset="elbow">Elbow pull-up</button>
+              <button class="btn" type="button" data-preset="slow">Slow recovery</button>
+            </div>
+            <p class="fine">Presets are demo values. Every input is an estimate unless you measured it.</p>
+            <span class="group-label">You · timing starts at the catch</span>
+            <div class="ctl"><label for="solo">Solo catch-to-release <output id="soloOut"></output></label><input id="solo" type="range" min="0.30" max="1.50" step="0.01" value="0.65"></div>
+            <div class="ctl"><label for="press">Pressured catch-to-release <output id="pressOut"></output></label><input id="press" type="range" min="0.30" max="1.50" step="0.01" value="0.85"><small>Includes any decision delay. Don't add it twice.</small></div>
+            <div class="ctl"><label for="bal">Self-rated balance under pressure <output id="balOut"></output></label><input id="bal" type="range" min="0" max="100" step="5" value="70"><small>Your own rating, not a measurement. It never changes the timing math.</small></div>
+            <span class="group-label">Defender</span>
+            <div class="ctl"><label for="dist">Starting distance <output id="distOut"></output></label><input id="dist" type="range" min="3" max="25" step="0.5" value="14"></div>
+            <div class="ctl"><label for="spd">Closeout speed <output id="spdOut"></output></label><input id="spd" type="range" min="0" max="24" step="0.5" value="16"></div>
+            <div class="ctl"><label for="unc">Speed uncertainty <output id="uncOut"></output></label><input id="unc" type="range" min="0" max="6" step="0.5" value="2"><small>Your speed is a guess, so the margin is shown as a range.</small></div>
+            <div class="ctl"><label for="ang">Approach angle <output id="angOut"></output></label><input id="ang" type="range" min="-150" max="150" step="5" value="45"><small>0° = straight from the basket side.</small></div>
+            <span class="group-label">Assumptions</span>
+            <div class="ctl"><label for="cone">Visual cone width <output id="coneOut"></output></label><input id="cone" type="range" min="30" max="180" step="10" value="100"><small>A diagram assumption, not your real vision.</small></div>
+            <div class="ctl"><label for="rad">Contest boundary <output id="radOut"></output></label><input id="rad" type="range" min="1" max="6" step="0.5" value="3"><small>Not a universal threshold.</small></div>
+          </div>
+        </div>
+        <div class="lab-out">
+          <div class="compare">
+            <div class="cbox gym"><span class="tc">Empty gym</span><span class="big" id="gymTime"></span><span class="fine">No defender deadline. A slow release is never punished.</span></div>
+            <div class="cbox live"><span class="tc">Live defense</span><span class="big" id="liveTime"></span><span class="fine" id="arrivalTxt"></span></div>
+          </div>
+          <svg class="court" viewBox="0 0 600 360" role="img" aria-label="Top-down view: shooter, defender start, defender at release, contest boundary and visual cone">
+            <rect class="svg-frame" x="20" y="10" width="560" height="340"></rect>
+            <circle class="svg-hoop" cx="300" cy="28" r="9"></circle>
+            <text class="svg-label" x="318" y="32">basket</text>
+            <path class="svg-cone" id="svgCone" d=""></path>
+            <circle class="svg-boundary" id="svgBoundary" cx="300" cy="180" r="18"></circle>
+            <line class="svg-route" id="svgRoute" x1="0" y1="0" x2="0" y2="0"></line>
+            <circle class="svg-start" id="svgStart" r="9" cx="0" cy="0"></circle>
+            <circle class="svg-finish" id="svgFinish" r="7" cx="0" cy="0"></circle>
+            <circle class="svg-shooter" cx="300" cy="180" r="11"></circle>
+            <text class="svg-label" x="316" y="200">you</text>
+          </svg>
+          <p class="fine">Faded red = defender at the catch · solid red = defender at your release · dashed ring = contest boundary · blue wedge = assumed visual cone.</p>
+          <p class="verdict" id="verdict" aria-live="polite">Calculating…</p>
+          <ul class="breakdown" id="breakdown"></ul>
+          <details>
+            <summary>Inspect the math and what it leaves out</summary>
+            <p class="fine" id="formula"></p>
+            <p class="fine">The defender runs straight at a stationary shooter at a constant speed and stops at the boundary. No acceleration, braking, jump reach, ball flight, teammates, head movement or shot outcome is modeled. In PTG, release time comes from your own slow-motion video, and the contest moment is marked by hand.</p>
+          </details>
+        </div>
+      </div>
+      <div class="lab-lower">
+        <div class="panel">
+          <h3>One experiment to try</h3>
+          <p class="fine">Based on your inputs. Not a diagnosis of your technique. A solo cue is not a live defender.</p>
+          <div id="experiments" class="stack"></div>
+        </div>
+        <div class="panel">
+          <h3>Your systems-thinking rep</h3>
+          <label for="pred">Before you touch a slider, write what should change and what should stay the same. Example: "If closeout speed goes up, arrival time drops and balance stays the same."</label>
+          <textarea id="pred" placeholder="My prediction…"></textarea>
+          <div class="presets"><button class="btn primary" type="button" id="lock">Lock prediction</button><button class="btn" type="button" id="unlock" hidden>Start over</button></div>
+          <div id="predOut" hidden>
+            <p class="fine">Now change one input. Here's what moved since you locked:</p>
+            <div class="tablewrap" style="border:0"><table class="delta" style="min-width:0"><thead><tr><th>Output</th><th>Locked</th><th>Now</th><th></th></tr></thead><tbody id="deltaRows"></tbody></table></div>
+          </div>
+          <label for="real">After you try the experiment: what actually happened?</label>
+          <textarea id="real" placeholder="Real result, in your words (saved in this browser only)"></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="stack">
+      <span class="tc">00:07 · Requirements</span>
+      <h2>What the product must do</h2>
+      <p>The seven business requirements from PRD v1.0. Each one has functional requirements and a test behind it.</p>
+      <div class="reqs">
+        <div class="req"><span class="id">BR-1</span><span>See whether a contest reached the ball before release, on your own clips</span></div>
+        <div class="req"><span class="id">BR-2</span><span>Study a play that pauses before the decision; answer, then see the cue</span></div>
+        <div class="req"><span class="id">BR-3</span><span>Get a beginner version of the read and a floor rep that fits your space</span></div>
+        <div class="req"><span class="id">BR-4</span><span>End every lesson with a game assignment and a 10-second game tag</span></div>
+        <div class="req"><span class="id">BR-5</span><span>"Proven for you" only after a delayed, cue-free retest</span></div>
+        <div class="req"><span class="id">BR-6</span><span>Every piece of advice shows its grade and what it's based on</span></div>
+        <div class="req"><span class="id">BR-7</span><span>Your video and data are private by default and fully deletable</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="stack">
+      <span class="tc">00:08 · Roadmap</span>
+      <h2>Gated, not dated</h2>
+      <p>Each phase moves on when its gate passes, not when the calendar says so. Everything starts by hand. Code comes in Phase 5, once the method has proven itself.</p>
+      <div class="phases">
+        <div class="phase now"><span class="n">0</span><div><b>Think and measure by hand</b><br><span class="fine">Five-clip rehearsal, two marking passes, systems-thinking sessions</span></div><span class="gate">definitions frozen, frame timing known</span></div>
+        <div class="phase"><span class="n">1</span><div><b>Ground truth</b><br><span class="fine">20 reps marked twice</span></div><span class="gate">90% of marks agree within 2 frames</span></div>
+        <div class="phase"><span class="n">2</span><div><b>Practice vs. game, by hand</b><br><span class="fine">Own clips, game tags, one experiment, one retest</span></div><span class="gate">one full loop logged</span></div>
+        <div class="phase"><span class="n">3</span><div><b>One Cue, by hand</b><br><span class="fine">Two cues, alternating blocks, retest without the cue</span></div><span class="gate">noise band known, honest result</span></div>
+        <div class="phase"><span class="n">4</span><div><b>Spec for an agent</b><br><span class="fine">Requirements, contracts, tests, claim-audit rules</span></div><span class="gate">every feature passes the admission test</span></div>
+        <div class="phase"><span class="n">5</span><div><b>Agent builds v1</b><br><span class="fine">Clip intake, stats with noise bands, claim audit, race clock on real data</span></div><span class="gate">acceptance tests pass</span></div>
+        <div class="phase"><span class="n">6</span><div><b>Read Before React + pilot</b><br><span class="fine">Five adult players, four to six weeks</span></div><span class="gate">4 of 5 explain a card's grade</span></div>
+        <div class="phase"><span class="n">7</span><div><b>Decide</b><br><span class="fine">Continue, simplify or change direction</span></div><span class="gate">a written decision with evidence</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="stack">
+      <span class="tc">00:09 · Next 14 days</span>
+      <h2>To-do</h2>
+      <p>Checkmarks are saved in this browser only.</p>
+      <div class="todo">
+        <div class="panel">
+          <h3>This week</h3>
+          <ul>
+            <li><input type="checkbox" id="t1"><label for="t1">Answer: a real game that went wrong, and what I practiced after</label></li>
+            <li><input type="checkbox" id="t2"><label for="t2">Write my predictions before recording</label></li>
+            <li><input type="checkbox" id="t3"><label for="t3">Record clips 01–03 (solo, solo, simulated)</label></li>
+            <li><input type="checkbox" id="t4"><label for="t4">Check one clip: steady or variable frame rate?</label></li>
+            <li><input type="checkbox" id="t5"><label for="t5">First marking pass in Kinovea</label></li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Next week</h3>
+          <ul>
+            <li><input type="checkbox" id="t6"><label for="t6">Second marking pass, different order, first pass hidden</label></li>
+            <li><input type="checkbox" id="t7"><label for="t7">Debrief; freeze event definitions v1</label></li>
+            <li><input type="checkbox" id="t8"><label for="t8">Read the freeze-frame training review; write its evidence card</label></li>
+            <li><input type="checkbox" id="t9"><label for="t9">Outline the case study: how I audit AI-built systems</label></li>
+            <li><input type="checkbox" id="t10"><label for="t10">Name one buyer group; book the first conversation</label></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Practice-to-Game Lab is a learning lab and portfolio project built by a former player who spent years training without knowing what to fix. All research claims are graded in the project's evidence library; competitor details come from public app listings.</p>
+  </footer>
+
+</div>
+</main>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var IDS = ["solo", "press", "bal", "dist", "spd", "unc", "ang", "cone", "rad"];
+  var PRESETS = {
+    corner: { solo: 0.62, press: 0.80, bal: 75, dist: 15, spd: 17.5, unc: 2, ang: 60, cone: 100, rad: 3 },
+    elbow:  { solo: 0.74, press: 0.95, bal: 60, dist: 9,  spd: 14,   unc: 2, ang: 20, cone: 100, rad: 3 },
+    slow:   { solo: 0.68, press: 0.78, bal: 80, dist: 18, spd: 11,   unc: 2, ang: -40, cone: 100, rad: 3 }
+  };
+  var expShown = false, locked = null;
+
+  function arrival(d, r, v) { if (d <= r) return 0; if (v <= 0) return Infinity; return (d - r) / v; }
+  function sec(n) { return isFinite(n) ? n.toFixed(2) + " s" : "no arrival"; }
+  function read() { var p = {}; IDS.forEach(function (id) { p[id] = parseFloat($(id).value); }); return p; }
+
+  function calc(p) {
+    var a = arrival(p.dist, p.rad, p.spd);
+    var aFast = arrival(p.dist, p.rad, p.spd + p.unc);
+    var aSlow = arrival(p.dist, p.rad, Math.max(0, p.spd - p.unc));
+    var gap = p.dist <= p.rad ? p.dist : Math.max(p.rad, p.dist - p.spd * p.press);
+    return {
+      a: a, m: a - p.press, mLow: aFast - p.press, mHigh: aSlow - p.press,
+      gap: gap, outside: Math.abs(p.ang) > p.cone / 2, change: p.press - p.solo
+    };
+  }
+
+  function point(dist, deg) {
+    var r = deg * Math.PI / 180, s = 6;
+    return [300 + Math.sin(r) * dist * s, 180 - Math.cos(r) * dist * s];
+  }
+
+  function draw(p, c) {
+    var st = point(p.dist, p.ang), fi = point(c.gap, p.ang);
+    var L = point(26, -p.cone / 2), R = point(26, p.cone / 2);
+    $("svgCone").setAttribute("d", "M300,180 L" + L[0] + "," + L[1] + " A156,156 0 0 1 " + R[0] + "," + R[1] + " Z");
+    $("svgBoundary").setAttribute("r", p.rad * 6);
+    $("svgStart").setAttribute("cx", st[0]); $("svgStart").setAttribute("cy", st[1]);
+    $("svgFinish").setAttribute("cx", fi[0]); $("svgFinish").setAttribute("cy", fi[1]);
+    $("svgRoute").setAttribute("x1", st[0]); $("svgRoute").setAttribute("y1", st[1]);
+    $("svgRoute").setAttribute("x2", fi[0]); $("svgRoute").setAttribute("y2", fi[1]);
+  }
+
+  function verdictText(c) {
+    if (!isFinite(c.a)) return "The defender never reaches the boundary at this speed. In this model there's no contest.";
+    var range = " (range " + (isFinite(c.mLow) ? c.mLow.toFixed(2) : "∞") + " to " + (isFinite(c.mHigh) ? c.mHigh.toFixed(2) : "∞") + " s)";
+    if (c.mLow >= 0) return "You release before the hand reaches the boundary across the whole speed range" + range + ". The window was still open in this model.";
+    if (c.mHigh < 0) return "The hand reaches the boundary before you release across the whole speed range" + range + ". In an empty gym you'd never feel this.";
+    return "Can't tell. The answer flips inside your speed range" + range + ". Measure the speed, or mark the contest frame by hand.";
+  }
+
+  function experiments(p, c) {
+    var out = [];
+    if (c.mLow < 0 || c.change > 0.1) out.push(["Compare a comfortable release with a time-limited one",
+      "Film small blocks of self-toss shots at a comfortable distance: normal rhythm, then with a gentle timing cue. Don't force a target time or sacrifice comfort.",
+      "Track catch-to-release (from slow-mo), makes and attempts, and how rushed it felt. Retest later without the cue. Faster alone doesn't mean better."]);
+    if (c.outside) out.push(["Notice the cue before you choose",
+      "Put a stationary screen or partner off to the side giving random left/right cues. Read the cue first, then make a controlled move in open space. Never look at a screen while jumping.",
+      "Track missed cues and correct choices. This tests a cue task, not game awareness; a live partner drill comes later."]);
+    if (p.bal < 75) out.push(["Compare your own balance across conditions",
+      "Film stationary shots and controlled step-in shots from the same spot. Ask yourself the same balance question after each block. No contact.",
+      "Compare ratings and clips. The 75% trigger is a demo rule, not a coaching threshold. Stop if anything hurts."]);
+    if (!out.length) out.push(["Check the scenario against real footage",
+      "Record a short solo block. With a willing partner, repeat with non-contact closeouts from a marked distance.",
+      "Compare real release timing and separation with the model. Check whether constant speed matches the footage before trusting it."]);
+    out = out.slice(0, 1);
+    var html = out.map(function (e) {
+      return '<div class="exp"><h4>' + e[0] + '</h4><p><b>Try:</b> ' + e[1] + '</p><p><b>Check:</b> ' + e[2] + '</p></div>';
+    }).join("");
+    html += '<div class="exp"><h4>Game assignment</h4><p>In your next pickup run, tag your next three closeouts in ten seconds each: did you see it, did you act, what happened.</p></div>';
+    $("experiments").innerHTML = html;
+  }
+
+  function snapshot(p, c) {
+    return {
+      "Boundary arrival": sec(c.a),
+      "Margin": isFinite(c.m) ? c.m.toFixed(2) + " s" : "n/a",
+      "Separation at release": c.gap.toFixed(1) + " ft",
+      "Defender in your cone?": c.outside ? "outside" : "inside",
+      "Balance rating": p.bal + "%",
+      "Timing math uses balance?": "no"
+    };
+  }
+
+  function update() {
+    var p = read(), c = calc(p);
+    $("soloOut").textContent = p.solo.toFixed(2) + " s";
+    $("pressOut").textContent = p.press.toFixed(2) + " s";
+    $("balOut").textContent = p.bal + "%";
+    $("distOut").textContent = p.dist + " ft";
+    $("spdOut").textContent = p.spd + " ft/s";
+    $("uncOut").textContent = "± " + p.unc + " ft/s";
+    $("angOut").textContent = p.ang + "°";
+    $("coneOut").textContent = p.cone + "°";
+    $("radOut").textContent = p.rad + " ft";
+    $("gymTime").textContent = p.solo.toFixed(2) + " s";
+    $("liveTime").textContent = p.press.toFixed(2) + " s";
+    $("arrivalTxt").textContent = "Hand reaches the " + p.rad + " ft boundary at " + sec(c.a) + ".";
+    $("verdict").textContent = verdictText(c);
+    var items = [
+      ["Timing", isFinite(c.a) ? (c.m >= 0 ? "Release comes " + c.m.toFixed(2) + " s before the boundary arrival." : "Boundary arrival comes " + Math.abs(c.m).toFixed(2) + " s before release.") + " This doesn't tell you whether the shot is blocked or missed." : "No arrival in this model."],
+      ["Spacing", "Modeled separation at release: " + c.gap.toFixed(1) + " ft."],
+      ["Vision", "The defender starts " + (c.outside ? "outside" : "inside") + " the assumed cone. Real awareness can't be inferred."],
+      ["Balance", "You entered " + p.bal + "%. Nothing is calculated from it."],
+      ["Solo to pressure", (c.change >= 0 ? "+" : "") + c.change.toFixed(2) + " s slower under pressure. The reason is unknown."]
+    ];
+    $("breakdown").innerHTML = items.map(function (i) { return "<li><b>" + i[0] + ":</b> " + i[1] + "</li>"; }).join("");
+    $("formula").textContent = "Arrival = (distance − boundary) ÷ speed = (" + p.dist + " − " + p.rad + ") ÷ " + p.spd + " = " + sec(c.a) +
+      ". Margin = arrival − pressured release. Range uses speed ± " + p.unc + " ft/s. Separation at release = distance − speed × release time, but never closer than the boundary.";
+    draw(p, c);
+    experiments(p, c);
+    if (locked) {
+      var now = snapshot(p, c);
+      $("deltaRows").innerHTML = Object.keys(now).map(function (k) {
+        var same = now[k] === locked[k];
+        return "<tr><td>" + k + "</td><td>" + locked[k] + "</td><td>" + now[k] + '</td><td class="' + (same ? "same" : "chg") + '">' + (same ? "same" : "changed") + "</td></tr>";
+      }).join("");
+    }
+  }
+
+  IDS.forEach(function (id) { $(id).addEventListener("input", function () {
+    document.querySelectorAll("[data-preset]").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+    update();
+  }); });
+  document.querySelectorAll("[data-preset]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var pr = PRESETS[b.getAttribute("data-preset")];
+      IDS.forEach(function (id) { $(id).value = pr[id]; });
+      document.querySelectorAll("[data-preset]").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      update();
+    });
+  });
+  $("lock").addEventListener("click", function () {
+    var p = read(); locked = snapshot(p, calc(p));
+    $("predOut").hidden = false; $("unlock").hidden = false; $("lock").hidden = true;
+    update();
+  });
+  $("unlock").addEventListener("click", function () {
+    locked = null; $("predOut").hidden = true; $("unlock").hidden = true; $("lock").hidden = false;
+  });
+  ["pred", "real"].forEach(function (id) {
+    try { var v = localStorage.getItem("ptg-" + id); if (v) $(id).value = v; } catch (e) {}
+    $(id).addEventListener("input", function () { try { localStorage.setItem("ptg-" + id, $(id).value); } catch (e) {} });
+  });
+  update();
+
+  var KEY = "ptg-todo";
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { saved = {}; }
+  document.querySelectorAll(".todo input[type=checkbox]").forEach(function (box) {
+    if (saved[box.id]) box.checked = true;
+    box.addEventListener("change", function () {
+      saved[box.id] = box.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+    });
+  });
+})();
+</script>

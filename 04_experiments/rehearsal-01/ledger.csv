@@ -1,0 +1,6 @@
+clip,condition,date,phone,setting_fps,cfr_or_vfr,interval_median_ms,interval_spread_ms,kinovea_first_frame_is,export_type,catch_p1,release_p1,contest_or_cue_p1,codes_p1,margin_p1_s,catch_p2,release_p2,contest_or_cue_p2,codes_p2,margin_p2_s,release_diff_frames,contest_diff_frames,margin_diff_frames,fatigue_1to5,notes
+01,solo,,,,,,,,n/a,,,n/a,,n/a,,,n/a,,n/a,,n/a,n/a,,
+02,solo,,,,,,,,n/a,,,n/a,,n/a,,,n/a,,n/a,,n/a,n/a,,
+03,simulated,,,,,,,,n/a,,,,,n/a,,,,,n/a,,,n/a,,cue goes in contest_or_cue column; never a contest
+04,live,,,,,,,,n/a,,,,,,,,,,,,,,,
+05,live,,,,,,,,n/a,,,,,,,,,,,,,,,

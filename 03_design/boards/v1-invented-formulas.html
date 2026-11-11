@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Practice-to-Game Lab — Basketball Transfer Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111726;
+      --card-border: #1e293b;
+      --accent-orange: #f97316;
+      --accent-amber: #f59e0b;
+      --accent-blue: #38bdf8;
+      --accent-emerald: #10b981;
+      --accent-rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --mono-font: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.5;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1380px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+    }
+
+    .title-group h1 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 9999px;
+      background: rgba(249, 115, 22, 0.15);
+      color: var(--accent-orange);
+      border: 1px solid rgba(249, 115, 22, 0.3);
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 4px;
+      max-width: 780px;
+    }
+
+    .audit-summary-pill {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 10px 18px;
+      border-radius: 12px;
+      text-align: right;
+    }
+
+    .audit-summary-pill .val {
+      font-family: var(--mono-font);
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    /* Layout Grid */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 1080px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      position: relative;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-main);
+    }
+
+    .card-title .tag {
+      font-size: 0.75rem;
+      font-family: var(--mono-font);
+      color: var(--text-dim);
+    }
+
+    /* Controls Form */
+    .control-section {
+      margin-bottom: 20px;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-orange);
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .control-group {
+      margin-bottom: 16px;
+    }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+    }
+
+    .control-title {
+      color: var(--text-main);
+      font-weight: 500;
+    }
+
+    .control-val {
+      font-family: var(--mono-font);
+      font-weight: 700;
+      color: var(--accent-blue);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      background: #1e293b;
+      border-radius: 4px;
+      outline: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent-orange);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.5);
+    }
+
+    .control-hint {
+      font-size: 0.74rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .preset-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .btn-preset {
+      background: #1e293b;
+      color: var(--text-muted);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 7px 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .btn-preset:hover, .btn-preset.active {
+      background: rgba(249, 115, 22, 0.2);
+      color: var(--accent-orange);
+      border-color: rgba(249, 115, 22, 0.4);
+    }
+
+    /* Simulation View & Visuals */
+    .sim-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .canvas-container {
+      background: #060911;
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 800px;
+      height: 280px;
+      display: block;
+    }
+
+    .canvas-legend {
+      display: flex;
+      gap: 20px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* Dual Comparison Bars */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 650px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .condition-box {
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.5);
+    }
+
+    .condition-box.solo {
+      border-top: 3px solid var(--accent-blue);
+    }
+
+    .condition-box.game {
+      border-top: 3px solid var(--accent-orange);
+    }
+
+    .cond-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .cond-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-row {
+      margin-bottom: 10px;
+    }
+
+    .metric-label-val {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      margin-bottom: 4px;
+    }
+
+    .bar-bg {
+      height: 6px;
+      background: #1e293b;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Diagnostics Callout */
+    .diagnostic-card {
+      border-left: 4px solid var(--accent-rose);
+      background: rgba(244, 63, 94, 0.05);
+    }
+
+    .diag-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .diag-item {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .diag-item .title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .diag-item .status {
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-family: var(--mono-font);
+    }
+
+    .diag-item .desc {
+      font-size: 0.74rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+      line-height: 1.35;
+    }
+
+    /* Drill Generator Section */
+    .drill-generator {
+      margin-top: 24px;
+    }
+
+    .drill-card {
+      background: #131d31;
+      border: 1px solid #25334d;
+      border-radius: 14px;
+      padding: 18px;
+      margin-top: 14px;
+    }
+
+    .drill-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 12px;
+    }
+
+    .drill-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent-orange);
+    }
+
+    .drill-tag {
+      font-family: var(--mono-font);
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-blue);
+      border-radius: 6px;
+    }
+
+    .drill-steps {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+
+    .drill-steps li {
+      position: relative;
+      padding-left: 20px;
+      color: #cbd5e1;
+    }
+
+    .drill-steps li::before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: var(--accent-amber);
+      font-family: var(--mono-font);
+    }
+
+    .cla-badge-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 14px;
+    }
+
+    .cla-pill {
+      font-size: 0.72rem;
+      background: #1e293b;
+      color: #94a3b8;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-family: var(--mono-font);
+    }
+
+    .cla-pill.target {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="title-group">
+      <h1>Practice-to-Game Lab <span class="badge">CLA Motor Transfer Simulator</span></h1>
+      <p>Simulate why solo basketball moves deteriorate against live defense. Adjust your mechanical baseline and incoming defender physics to reveal the precise kinematic breakdown point.</p>
+    </div>
+    <div class="audit-summary-pill">
+      <div style="font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em;">Transfer Likelihood</div>
+      <div id="transferScore" class="val" style="color: var(--accent-orange);">--%</div>
+    </div>
+  </header>
+
+  <div class="dashboard">
+    <!-- Left Column: Controls & Kinematic Inputs -->
+    <div class="card">
+      <div class="card-title">
+        <span>Kinematic & Spatial Controls</span>
+        <span class="tag">System Inputs</span>
+      </div>
+
+      <div class="preset-buttons">
+        <button class="btn-preset active" onclick="applyPreset('corner')">Corner 3</button>
+        <button class="btn-preset" onclick="applyPreset('midrange')">Elbow Pull-Up</button>
+        <button class="btn-preset" onclick="applyPreset('slow')">Slow Recovery</button>
+      </div>
+
+      <div class="control-section">
+        <span class="section-label">1. Shooter Execution</span>
+        
+        <div class="control-group">
+          <div class="control-header">
+            <span class="control-title">Solo Release Time (Dip to Apex)</span>
+            <span class="control-val" id="val_releaseTime">0.68 s</span>
+          </div>
+          <input type="range" id="input_releaseTime" min="0.40" max="1.10" step="0.02" value="0.68">
+          <div class="control-hint">Elite catch-and-shoot: ~0.50–0.65s. Set shot / gather: 0.75s+.</div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-header">
+            <span class="control-title">Perceptual Read Lag (Decision Time)</span>
+            <span class="control-val" id="val_reactionLag">0.28 s</span>
+          </div>
+          <input type="range" id="input_reactionLag" min="0.10" max="0.60" step="0.02" value="0.28">
+          <div class="control-hint">Latency to recognize defender closeout angle & decide shoot vs pump.</div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-header">
+            <span class="control-title">Rushed Balance Retention</span>
+            <span class="control-val" id="val_balance">70 %</span>
+          </div>
+          <input type="range" id="input_balance" min="20" max="100" step="5" value="70">
+          <div class="control-hint">Base stability & vertical jump alignment when rushed by ≥ 0.15s.</div>
+        </div>
+      </div>
+
+      <div class="control-section">
+        <span class="section-label">2. Defensive Constraint</span>
+
+        <div class="control-group">
+          <div class="control-header">
+            <span class="control-title">Defender Initial Distance</span>
+            <span class="control-val" id="val_defenderDist">14.0 ft</span>
+          </div>
+          <input type="range" id="input_defenderDist" min="6.0" max="22.0" step="0.5" value="14.0">
+          <div class="control-hint">Spatial separation at the moment the pass is caught.</div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-header">
+            <span class="control-title">Defender Closeout Velocity</span>
+            <span class="control-val" id="val_closeoutSpeed">16.5 ft/s</span>
+          </div>
+          <input type="range" id="input_closeoutSpeed" min="8.0" max="24.0" step="0.5" value="16.5">
+          <div class="control-hint">Sprint speed into contest (18 ft/s = ~12.2 mph game sprint).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Interactive Simulation & CLA Diagnostics -->
+    <div class="sim-panel">
+      <!-- 2D Court & Trajectory Visualizer -->
+      <div class="canvas-container">
+        <canvas id="simCanvas" width="760" height="260"></canvas>
+        <div class="canvas-legend">
+          <div class="legend-item"><span class="dot" style="background:var(--accent-blue);"></span> Shooter Spot (Catch)</div>
+          <div class="legend-item"><span class="dot" style="background:var(--accent-rose);"></span> Defender Closing Out</div>
+          <div class="legend-item"><span class="dot" style="background:var(--accent-amber);"></span> Shot Flight Arc</div>
+          <div class="legend-item"><span class="dot" style="background:#475569;"></span> 3-Point Arc</div>
+        </div>
+      </div>
+
+      <!-- Dual Comparison: Solo Gym vs Live Game -->
+      <div class="comparison-grid">
+        <div class="condition-box solo">
+          <div class="cond-header">
+            <span class="cond-title" style="color:var(--accent-blue);">Empty Gym Practice</span>
+            <span style="font-family:var(--mono-font); font-size:0.85rem; color:var(--accent-blue);">Zero Friction</span>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label-val">
+              <span>Time Budget to Release</span>
+              <span class="val" id="solo_budget">∞ s (Unconstrained)</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" style="width:100%; background:var(--accent-blue);"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label-val">
+              <span>Form Integrity</span>
+              <span class="val" id="solo_form">95% (Clean)</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" style="width:95%; background:var(--accent-blue);"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label-val">
+              <span>Expected Shooting %</span>
+              <span class="val" id="solo_pct">74%</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" id="solo_pct_bar" style="width:74%; background:var(--accent-emerald);"></div></div>
+          </div>
+        </div>
+
+        <div class="condition-box game">
+          <div class="cond-header">
+            <span class="cond-title" style="color:var(--accent-orange);">Live Game Reality</span>
+            <span id="game_status_badge" style="font-family:var(--mono-font); font-size:0.75rem; font-weight:700;">CALCULATING...</span>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label-val">
+              <span>Time Before Contest Arrives</span>
+              <span class="val" id="game_time_budget">0.85 s</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" id="game_budget_bar" style="width:50%; background:var(--accent-orange);"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label-val">
+              <span>Balance After Rush Penalty</span>
+              <span class="val" id="game_balance">45%</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" id="game_balance_bar" style="width:45%; background:var(--accent-orange);"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label-val">
+              <span>Game Transfer Shooting %</span>
+              <span class="val" id="game_pct">28%</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" id="game_pct_bar" style="width:28%; background:var(--accent-rose);"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diagnostic Breakdown -->
+      <div class="card diagnostic-card">
+        <div class="card-title">
+          <span style="color:var(--accent-rose);">Breakdown Diagnosis: Why It Dies In Game</span>
+          <span class="tag" id="diag_bottleneck">Primary Bottleneck: Release Lag</span>
+        </div>
+        <p style="font-size:0.85rem; color:var(--text-muted);" id="diag_narrative">
+          Your solo practice assumes a 0.68s rhythm. Adding your 0.28s perceptual read means the ball leaves your hand at 0.96s. The defender reaches a high hand contest at 0.85s. You are forced to alter your gather mid-motion.
+        </p>
+        <div class="diag-grid">
+          <div class="diag-item">
+            <div class="title">Contest Distance at Release</div>
+            <div class="status" id="diag_contest_dist">1.4 ft (Heavily Contested)</div>
+            <div class="desc">A contest under 3.0 ft triggers sub-conscious visual flinch and truncated elbow extension.</div>
+          </div>
+          <div class="diag-item">
+            <div class="title">Time Deficit</div>
+            <div class="status" id="diag_time_deficit">-0.11 s</div>
+            <div class="desc">Negative budget forces an accelerated dip or hurried set point, destroying shot arc repeatability.</div>
+          </div>
+          <div class="diag-item">
+            <div class="title">Affordance Window</div>
+            <div class="status" id="diag_affordance">Expired for Shot</div>
+            <div class="desc">By the time you processed the closeout, the 'Shoot' opportunity had closed; a pump-and-drive was required.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prescriptive Constraints-Led Drills -->
+      <div class="card drill-generator">
+        <div class="card-title">
+          <span>Targeted Solo Transfer Drill (Constraints-Led Approach)</span>
+          <span class="tag">Prescribed Experiment</span>
+        </div>
+        <div id="drillDisplay" class="drill-card">
+          <!-- Dynamically populated based on bottleneck -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // DOM element selectors
+  const inputs = {
+    releaseTime: document.getElementById('input_releaseTime'),
+    reactionLag: document.getElementById('input_reactionLag'),
+    balance: document.getElementById('input_balance'),
+    defenderDist: document.getElementById('input_defenderDist'),
+    closeoutSpeed: document.getElementById('input_closeoutSpeed')
+  };
+
+  const values = {
+    releaseTime: document.getElementById('val_releaseTime'),
+    reactionLag: document.getElementById('val_reactionLag'),
+    balance: document.getElementById('val_balance'),
+    defenderDist: document.getElementById('val_defenderDist'),
+    closeoutSpeed: document.getElementById('val_closeoutSpeed')
+  };
+
+  const outputs = {
+    transferScore: document.getElementById('transferScore'),
+    gameStatusBadge: document.getElementById('game_status_badge'),
+    gameTimeBudget: document.getElementById('game_time_budget'),
+    gameBudgetBar: document.getElementById('game_budget_bar'),
+    gameBalance: document.getElementById('game_balance'),
+    gameBalanceBar: document.getElementById('game_balance_bar'),
+    gamePct: document.getElementById('game_pct'),
+    gamePctBar: document.getElementById('game_pct_bar'),
+    soloPct: document.getElementById('solo_pct'),
+    soloPctBar: document.getElementById('solo_pct_bar'),
+    diagBottleneck: document.getElementById('diag_bottleneck'),
+    diagNarrative: document.getElementById('diag_narrative'),
+    diagContestDist: document.getElementById('diag_contest_dist'),
+    diagTimeDeficit: document.getElementById('diag_time_deficit'),
+    diagAffordance: document.getElementById('diag_affordance'),
+    drillDisplay: document.getElementById('drillDisplay')
+  };
+
+  const canvas = document.getElementById('simCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Attach real-time listeners
+  Object.keys(inputs).forEach(key => {
+    inputs[key].addEventListener('input', runSimulation);
+  });
+
+  function applyPreset(type) {
+    document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
+    if (event) event.target.classList.add('active');
+
+    if (type === 'corner') {
+      inputs.releaseTime.value = 0.64;
+      inputs.reactionLag.value = 0.22;
+      inputs.balance.value = 75;
+      inputs.defenderDist.value = 15.0;
+      inputs.closeoutSpeed.value = 17.5;
+    } else if (type === 'midrange') {
+      inputs.releaseTime.value = 0.74;
+      inputs.reactionLag.value = 0.32;
+      inputs.balance.value = 60;
+      inputs.defenderDist.value = 9.0;
+      inputs.closeoutSpeed.value = 14.0;
+    } else if (type === 'slow') {
+      inputs.releaseTime.value = 0.68;
+      inputs.reactionLag.value = 0.30;
+      inputs.balance.value = 80;
+      inputs.defenderDist.value = 18.0;
+      inputs.closeoutSpeed.value = 11.0;
+    }
+    runSimulation();
+  }
+
+  function runSimulation() {
+    // 1. Gather raw parameters
+    const t_release = parseFloat(inputs.releaseTime.value);
+    const t_reaction = parseFloat(inputs.reactionLag.value);
+    const b_retention = parseFloat(inputs.balance.value) / 100;
+    const d_dist = parseFloat(inputs.defenderDist.value);
+    const v_closeout = parseFloat(inputs.closeoutSpeed.value);
+
+    // Update label text
+    values.releaseTime.textContent = t_release.toFixed(2) + ' s';
+    values.reactionLag.textContent = t_reaction.toFixed(2) + ' s';
+    values.balance.textContent = Math.round(b_retention * 100) + ' %';
+    values.defenderDist.textContent = d_dist.toFixed(1) + ' ft';
+    values.closeoutSpeed.textContent = v_closeout.toFixed(1) + ' ft/s';
+
+    // 2. Kinematic calculations
+    // Total execution time = decision latency + mechanical release
+    const totalShooterTime = t_release + t_reaction;
+    
+    // Time until defender closes space to a 3.0 ft hand contest radius (effective contest reach)
+    const effectiveContestDist = Math.max(0.5, d_dist - 2.8);
+    const timeToContest = effectiveContestDist / v_closeout;
+
+    // Time budget difference: positive = clean look, negative = rushed/contested
+    const timeMargin = timeToContest - totalShooterTime;
+
+    // Defender distance at the exact moment of ball release
+    const defenderTravelAtRelease = v_closeout * totalShooterTime;
+    const distanceAtRelease = Math.max(0.5, d_dist - defenderTravelAtRelease);
+
+    // Baseline Solo Accuracy: assume a dedicated solo hooper shoots ~70-75% in an open gym
+    const soloExpectedPct = 72;
+    outputs.soloPct.textContent = soloExpectedPct + '%';
+    outputs.soloPctBar.style.width = soloExpectedPct + '%';
+
+    // 3. Degrade accuracy based on CLA stressors
+    let contestPenalty = 0;
+    if (distanceAtRelease < 6.0) {
+      // Exponential penalty as defender gets inside 6 feet
+      contestPenalty = Math.pow((6.0 - distanceAtRelease) / 5.5, 1.4) * 45;
+    }
+
+    let rushPenalty = 0;
+    if (timeMargin < 0.1) {
+      // Player had to rush or flinch
+      const rushDeficit = Math.abs(Math.min(0, timeMargin));
+      rushPenalty = (rushDeficit * 35) + ((1 - b_retention) * 25);
+    }
+
+    const calculatedGamePct = Math.max(12, Math.min(soloExpectedPct, Math.round(soloExpectedPct - contestPenalty - rushPenalty)));
+    const transferRate = Math.round((calculatedGamePct / soloExpectedPct) * 100);
+
+    // Update displays
+    outputs.transferScore.textContent = transferRate + '%';
+    outputs.transferScore.style.color = transferRate > 65 ? 'var(--accent-emerald)' : (transferRate > 40 ? 'var(--accent-amber)' : 'var(--accent-rose)');
+
+    outputs.gameTimeBudget.textContent = timeToContest.toFixed(2) + ' s';
+    outputs.gameBudgetBar.style.width = Math.min(100, Math.max(5, (timeToContest / 1.5) * 100)) + '%';
+
+    const effectiveBalance = Math.round(Math.max(20, b_retention * 100 - (timeMargin < 0 ? 30 : 0)));
+    outputs.gameBalance.textContent = effectiveBalance + '%';
+    outputs.gameBalanceBar.style.width = effectiveBalance + '%';
+
+    outputs.gamePct.textContent = calculatedGamePct + '%';
+    outputs.gamePctBar.style.width = calculatedGamePct + '%';
+    outputs.gamePctBar.style.background = calculatedGamePct > 50 ? 'var(--accent-emerald)' : (calculatedGamePct > 35 ? 'var(--accent-amber)' : 'var(--accent-rose)');
+
+    if (timeMargin >= 0.15 && distanceAtRelease >= 5.0) {
+      outputs.gameStatusBadge.textContent = 'CLEAN LOOK (TRANSFERS)';
+      outputs.gameStatusBadge.style.color = 'var(--accent-emerald)';
+    } else if (timeMargin >= -0.08 && distanceAtRelease >= 3.2) {
+      outputs.gameStatusBadge.textContent = 'LIGHT CONTEST (DEGRADES)';
+      outputs.gameStatusBadge.style.color = 'var(--accent-amber)';
+    } else {
+      outputs.gameStatusBadge.textContent = 'SMOTHERED (COLLAPSES)';
+      outputs.gameStatusBadge.style.color = 'var(--accent-rose)';
+    }
+
+    // 4. Determine Primary Bottleneck & Diagnostics
+    let primaryBottleneck = "";
+    let narrative = "";
+    let drillTemplate = {};
+
+    if (t_reaction > 0.30) {
+      primaryBottleneck = "Perception Lag (Deciding Too Late)";
+      narrative = `Your solo mechanics are fine, but you spend ${t_reaction.toFixed(2)}s just identifying whether the defender is coming. This reaction lag accounts for ${Math.round((t_reaction / totalShooterTime)*100)}% of your time before release, handing the defender an easy closeout recovery.`;
+      
+      drillTemplate = {
+        name: "Unannounced Flash Closeout (Information-Coupled Catch)",
+        tag: "Focus: Perceptual Speed & Optical Flow",
+        steps: [
+          "Stand at the 3-point line with your back to the basket holding the ball.",
+          "Self-spin the ball backward, reverse pivot into triple-threat.",
+          "Place a partner (or a phone playing random flashing cues) at the free throw line.",
+          "Rule: If the arm is above shoulder height at the catch, drive immediately. If below shoulder height, you must shoot within 0.6s.",
+          "Constraint: Repetition without repetition — varying pass heights and unpredictable cues."
+        ],
+        clas: ["Affordance Recognition", "Random Practice", "Action-Perception Coupling"]
+      };
+    } else if (t_release > 0.72) {
+      primaryBottleneck = "Mechanical Gathering Duration (Slow Dip)";
+      narrative = `You take ${t_release.toFixed(2)}s to gather and release. Even with fast recognition, your physical dipping motion takes longer than the ${timeToContest.toFixed(2)}s window the defender gives you from ${d_dist.toFixed(1)} feet away.`;
+      
+      drillTemplate = {
+        name: "Pocket Drop & Compact Gather Under Clock Constraints",
+        tag: "Focus: Release Economy Without Form Distortion",
+        steps: [
+          "Self-toss the ball into the shooting pocket with high bounce variation.",
+          "Set an audio beep on a 0.60s delay from ball impact.",
+          "Your ball must reach the apex of release before the beep sounds.",
+          "Constraint: Do not eliminate the dip entirely (which ruins rhythm) — instead, lower your hips *while the ball is airborne* before the catch.",
+          "External focus cue: Focus entirely on the back of the rim, not your elbow angle."
+        ],
+        clas: ["Temporal Compression", "External Focus of Attention", "Rhythm Preservation"]
+      };
+    } else if (b_retention < 0.65) {
+      primaryBottleneck = "Balance Degradation Under Hurried Cadence";
+      narrative = `You can release in time, but when forced to compress your tempo by even 0.15s, your center of mass drifts. You lose base alignment, causing severe left/right spray on your misses.`;
+      
+      drillTemplate = {
+        name: "Perturbation Hop-Step & Contact Landing",
+        tag: "Focus: Dynamic Base Retention Under Stress",
+        steps: [
+          "Begin on one foot at the wing. Execute an aggressive lateral hop into your 1-2 or hop gather.",
+          "Immediately prior to foot strike, self-spin the basketball off-center.",
+          "Force yourself to absorb the deceleration through your hips and core before extending vertically.",
+          "Measurement gate: If your landing foot displaced more than 4 inches horizontally from takeoff, the rep does not count (even if made)."
+        ],
+        clas: ["Deceleration Dynamics", "Landing Base Control", "Self-Governed Gates"]
+      };
+    } else {
+      primaryBottleneck = "Severe Spatial Disadvantage (Distance Too Close)";
+      narrative = `Your mechanics and reads are solid (total time ${totalShooterTime.toFixed(2)}s), but a defender at ${d_dist.toFixed(1)}ft closing at ${v_closeout.toFixed(1)}ft/s mathematically suppresses shooting percentages for anyone. The correct play is not to shoot—it is to attack the closeout.`;
+      
+      drillTemplate = {
+        name: "Closeout Deceleration Attack (Blow-By / Step-Back Counter)",
+        tag: "Focus: Emergent Action Selection",
+        steps: [
+          "Place a cone at 14 feet. Sprint to the catch at the 3-point line.",
+          "Roll ball forward. As you touch the ball, imagine the defender at maximum sprint speed.",
+          "Since the shot affordance is closed, execute a one-dribble puncture directly at the defender's lead foot.",
+          "Evaluate: Pull up into a rhythm middy or euro-step finish."
+        ],
+        clas: ["Representative Game Geometry", "Affordance Transition", "Emergent Countering"]
+      };
+    }
+
+    outputs.diagBottleneck.textContent = primaryBottleneck;
+    outputs.diagNarrative.textContent = narrative;
+    outputs.diagContestDist.textContent = distanceAtRelease.toFixed(1) + ' ft ' + (distanceAtRelease < 3.5 ? '(Smothered)' : (distanceAtRelease < 5.5 ? '(Contested)' : '(Clean Space)'));
+    outputs.diagTimeDeficit.textContent = (timeMargin > 0 ? '+' : '') + timeMargin.toFixed(2) + ' s';
+    outputs.diagTimeDeficit.style.color = timeMargin >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+    outputs.diagAffordance.textContent = timeMargin >= 0.05 ? 'Valid Shoot Affordance' : 'Affordance Closed (Drive Mandatory)';
+
+    // Render Drill Card
+    outputs.drillDisplay.innerHTML = `
+      <div class="drill-header">
+        <div class="drill-name">${drillTemplate.name}</div>
+        <div class="drill-tag">${drillTemplate.tag}</div>
+      </div>
+      <ul class="drill-steps">
+        ${drillTemplate.steps.map(s => `<li>${s}</li>`).join('')}
+      </ul>
+      <div class="cla-badge-list">
+        ${drillTemplate.clas.map(c => `<span class="cla-pill target">${c}</span>`).join('')}
+        <span class="cla-pill">No Fluff Reps</span>
+      </div>
+    `;
+
+    // 5. Draw Visual Simulation on Canvas
+    drawSimulation(totalShooterTime, timeToContest, distanceAtRelease, d_dist);
+  }
+
+  function drawSimulation(shooterTime, defenderTime, releaseDist, initDist) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // Court Floor & 3PT Line
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(w - 60, h / 2, 190, 0.5 * Math.PI, 1.5 * Math.PI);
+    ctx.stroke();
+
+    // Hoop & Backboard
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(w - 70, h / 2, 7, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(w - 60, h / 2 - 25, 4, 50);
+
+    // Coordinate mapping
+    // Shooter is positioned at left side of court arc
+    const shooterX = 140;
+    const shooterY = h / 2;
+
+    // Defender starting position based on initial distance (scaled)
+    const scale = 14; // pixels per foot
+    const defenderStartX = shooterX + (initDist * scale);
+    const defenderY = h / 2;
+
+    // Defender current position at release
+    const defenderCurrentX = shooterX + (releaseDist * scale);
+
+    // Draw trajectory arrow of shot
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(shooterX, shooterY - 12);
+    ctx.quadraticCurveTo((shooterX + w - 70) / 2, shooterY - 70, w - 70, shooterY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw Defender Closeout Vector
+    ctx.strokeStyle = 'rgba(244, 63, 94, 0.6)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(defenderStartX, defenderY);
+    ctx.lineTo(defenderCurrentX, defenderY);
+    ctx.stroke();
+
+    // Draw Initial Defender Ghost
+    ctx.fillStyle = 'rgba(244, 63, 94, 0.2)';
+    ctx.beginPath();
+    ctx.arc(defenderStartX, defenderY, 10, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Draw Defender at Release
+    ctx.fillStyle = 'var(--accent-rose)';
+    ctx.beginPath();
+    ctx.arc(defenderCurrentX, defenderY, 12, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Defender Contest Reach Radius (3.0 ft in front)
+    ctx.strokeStyle = 'rgba(244, 63, 94, 0.35)';
+    ctx.fillStyle = 'rgba(244, 63, 94, 0.08)';
+    ctx.beginPath();
+    ctx.arc(defenderCurrentX, defenderY, 3.0 * scale, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw Shooter
+    ctx.fillStyle = 'var(--accent-blue)';
+    ctx.beginPath();
+    ctx.arc(shooterX, shooterY, 13, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Labels on canvas
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '11px JetBrains Mono';
+    ctx.fillText('SHOOTER', shooterX - 25, shooterY + 28);
+    ctx.fillText(`RELEASE: ${shooterTime.toFixed(2)}s`, shooterX - 35, shooterY - 22);
+
+    ctx.fillStyle = 'var(--accent-rose)';
+    ctx.fillText('DEFENDER', defenderCurrentX - 25, defenderY + 28);
+    ctx.fillText(`${releaseDist.toFixed(1)}ft GAP`, (shooterX + defenderCurrentX) / 2 - 25, defenderY - 8);
+  }
+
+  // Initial Run
+  runSimulation();
+</script>
+
+</body>
+</html>

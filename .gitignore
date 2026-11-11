@@ -1,0 +1,16 @@
+# Not published: papers we don't hold the rights to share (library cards name each one)
+*.pdf
+
+# Not published: raw chat transcripts, duplicates, superseded docs
+_archive/
+
+# Not published: video and images of people (privacy rule BR-7). Clips stay on disk only.
+*.mp4
+*.mov
+*.m4v
+*.avi
+*.mkv
+*.webm
+*.hevc
+*.kva
+*.zip

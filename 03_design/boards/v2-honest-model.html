@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Practice-to-Game Lab</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #0c1220; color: #edf2fa;
+    font: 16px/1.5 system-ui, sans-serif;
+  }
+  main { max-width: 1150px; margin: auto; padding: 28px; }
+  h1, h2, h3 { line-height: 1.2; }
+  h1 { margin-bottom: 8px; }
+  h2 { font-size: 20px; margin-top: 0; }
+  p { color: #b6c3d8; }
+  .badge {
+    display: inline-block; padding: 5px 10px;
+    background: #344020; color: #d7efaa; border-radius: 20px;
+    font-size: 12px; font-weight: bold;
+  }
+  .layout { display: grid; grid-template-columns: 330px 1fr; gap: 20px; }
+  .card {
+    background: #162033; border: 1px solid #2b3952;
+    padding: 22px; border-radius: 16px; margin-bottom: 20px;
+  }
+  .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .comparison article {
+    background: #0e1728; padding: 16px; border-radius: 12px;
+  }
+  .comparison h3 { margin-top: 0; font-size: 16px; }
+  label { display: block; margin-top: 20px; font-weight: 600; }
+  output { color: #ffbd73; float: right; }
+  input[type=range] { width: 100%; accent-color: #ff9b45; }
+  small { display: block; color: #a4b3cb; font-weight: normal; }
+  .metric { font-size: 26px; font-weight: 750; color: #ffbd73; }
+  .note { border-left: 3px solid #ff9b45; padding-left: 14px; }
+  svg { width: 100%; background: #0e1728; border-radius: 12px; }
+  .result { padding: 12px 0; border-bottom: 1px solid #2b3952; }
+  .result:last-child { border-bottom: 0; }
+  .drill { background: #0e1728; padding: 16px; border-radius: 12px; margin-top: 12px; }
+  .drill h3 { color: #ffbd73; margin-top: 0; font-size: 17px; }
+  button {
+    background: #ff9b45; color: #17120b; border: 0;
+    padding: 12px 18px; border-radius: 9px;
+    font: inherit; font-weight: 700; cursor: pointer;
+  }
+  details { margin-top: 14px; color: #b6c3d8; }
+  summary { cursor: pointer; }
+  #prediction { width: 100%; padding: 10px; border-radius: 8px; margin: 10px 0; }
+  @media(max-width: 800px) {
+    .layout { grid-template-columns: 1fr; }
+    main { padding: 16px; }
+  }
+  @media(max-width: 480px) {
+    .comparison { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <span class="badge">CONCEPT DEMO · NOT A VALIDATED COACHING MODEL</span>
+  <h1>Practice-to-Game Lab 🏀</h1>
+  <p>Explore how defensive pressure changes the time and information
+    available for a shot. Turn a scenario into a practice experiment.</p>
+
+  <div class="layout">
+    <aside class="card">
+      <h2>Build your scenario</h2>
+      <small>Inputs are estimates unless you measured them.
+        Timing starts at the catch and ends when the ball leaves your hand.</small>
+
+      <label for="solo">Solo catch-to-release <output id="soloValue"></output></label>
+      <input id="solo" type="range" min=".3" max="1.5" step=".01" value=".65">
+
+      <label for="pressure">Pressured catch-to-release <output id="pressureValue"></output></label>
+      <input id="pressure" type="range" min=".3" max="1.5" step=".01" value=".85">
+      <small>Includes any decision delay after the catch. Do not add that delay twice.</small>
+
+      <label for="distance">Defender starting distance <output id="distanceValue"></output></label>
+      <input id="distance" type="range" min="3" max="25" step=".5" value="14">
+
+      <label for="speed">Closeout speed <output id="speedValue"></output></label>
+      <input id="speed" type="range" min="0" max="24" step=".5" value="16">
+      <small>Feet per second. This simplified model assumes constant speed.</small>
+
+      <label for="angle">Defender approach angle <output id="angleValue"></output></label>
+      <input id="angle" type="range" min="-150" max="150" step="5" value="45">
+      <small>Relative to facing the basket: zero is directly ahead.</small>
+
+      <label for="vision">Assumed visual cone width <output id="visionValue"></output></label>
+      <input id="vision" type="range" min="30" max="180" step="10" value="100">
+      <small>A diagram assumption—not a measurement of your vision or attention.</small>
+
+      <label for="balance">Self-rated balance retention <output id="balanceValue"></output></label>
+      <input id="balance" type="range" min="0" max="100" step="5" value="70">
+      <small>Your subjective rating under pressure, not a biomechanical measurement.</small>
+
+      <label for="radius">Assumed contest boundary <output id="radiusValue"></output></label>
+      <input id="radius" type="range" min="1" max="6" step=".5" value="3">
+      <small>An adjustable scenario boundary, not a universal contest threshold.</small>
+    </aside>
+
+    <section>
+      <div class="card">
+        <h2>Solo versus defensive pressure</h2>
+        <div class="comparison">
+          <article>
+            <h3>Empty gym</h3>
+            <div id="soloTime" class="metric"></div>
+            <small>No defender-imposed deadline in this scenario.</small>
+          </article>
+          <article>
+            <h3>Live-defense scenario</h3>
+            <div id="pressureTime" class="metric"></div>
+            <small id="timingSummary"></small>
+          </article>
+        </div>
+
+        <p>Top-down schematic: blue = shooter, red = defender at catch,
+          orange = defender at release, shaded area = assumed visual cone.</p>
+        <svg viewBox="0 0 600 340" role="img"
+             aria-label="Top-down closeout and visual-cone diagram">
+          <path d="M40 30H560V310H40Z" fill="none" stroke="#35435d"/>
+          <circle cx="300" cy="40" r="9" fill="none" stroke="#ffbd73" stroke-width="3"/>
+          <text x="320" y="45" fill="#b6c3d8" font-size="12">Basket direction</text>
+          <path id="cone" fill="#38bdf8" opacity=".12"/>
+          <circle id="boundary" cx="300" cy="240" fill="none"
+                  stroke="#ffbd73" stroke-dasharray="5 5"/>
+          <line id="route" stroke="#f87171" stroke-width="2"/>
+          <circle id="start" r="9" fill="#f87171"/>
+          <circle id="finish" r="7" fill="#ffbd73"/>
+          <circle cx="300" cy="240" r="11" fill="#38bdf8"/>
+          <text x="315" y="260" fill="#b6c3d8" font-size="12">Shooter</text>
+        </svg>
+
+        <details>
+          <summary>Inspect the calculation and assumptions</summary>
+          <p id="formula"></p>
+          <p>The defender moves directly toward a stationary shooter.
+            No acceleration, braking, jump reach, ball flight, teammates,
+            head movement, or shot outcome is modeled. The diagram is
+            illustrative, not a regulation court.</p>
+        </details>
+      </div>
+
+      <div class="card">
+        <h2>Scenario breakdown</h2>
+        <div id="breakdown" aria-live="polite"></div>
+      </div>
+
+      <div class="card">
+        <h2>Suggested practice experiments</h2>
+        <p>Suggestions respond to the inputs—not a diagnosis of your technique.
+          A solo cue is not equivalent to a live defender.</p>
+        <button id="generate">Generate experiments</button>
+        <div id="drills"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="card">
+    <h2>Your systems-thinking rep</h2>
+    <p>Predict: if you increase closeout speed but keep everything else
+      unchanged, what happens to arrival time? Should your balance rating change?</p>
+    <input id="prediction" aria-label="Write your prediction"
+           placeholder="Write your prediction before changing a slider…">
+    <small>Then inspect the calculation. Your prediction stays in this page
+      only; nothing is uploaded or saved.</small>
+  </div>
+</main>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const ids = ["solo", "pressure", "distance", "speed",
+               "angle", "vision", "balance", "radius"];
+  let state;
+  let drillsGenerated = false;
+
+  function calculate(p) {
+    const arrival = p.distance <= p.radius
+      ? 0
+      : p.speed === 0
+        ? Infinity
+        : (p.distance - p.radius) / p.speed;
+
+    return {
+      ...p,
+      arrival,
+      margin: arrival - p.pressure,
+      releaseGap: Math.max(0, p.distance - p.speed * p.pressure),
+      outsideCone: Math.abs(p.angle) > p.vision / 2,
+      timingChange: p.pressure - p.solo
+    };
+  }
+
+  function seconds(n) {
+    return Number.isFinite(n) ? n.toFixed(2) + " s" : "No arrival";
+  }
+
+  function update() {
+    const p = Object.fromEntries(ids.map(id => [id, Number($(id).value)]));
+    state = calculate(p);
+
+    ids.forEach(id => {
+      const unit = ["solo", "pressure"].includes(id) ? " s"
+        : ["distance", "radius"].includes(id) ? " ft"
+        : id === "speed" ? " ft/s"
+        : id === "balance" ? "%" : "°";
+      $(id + "Value").textContent =
+        (["solo", "pressure"].includes(id) ? p[id].toFixed(2) : p[id]) + unit;
+    });
+
+    $("soloTime").textContent = seconds(p.solo);
+    $("pressureTime").textContent = seconds(p.pressure);
+    $("timingSummary").textContent =
+      "Boundary arrival: " + seconds(state.arrival);
+
+    const timingText = !Number.isFinite(state.arrival)
+      ? "The stationary defender does not reach the chosen boundary."
+      : state.margin >= 0
+        ? `Release is ${state.margin.toFixed(2)} s before boundary arrival.`
+        : `Boundary arrival is ${Math.abs(state.margin).toFixed(2)} s before release.`;
+
+    $("breakdown").innerHTML = `
+      <div class="result"><strong>Timing:</strong> ${timingText}
+        This does not establish whether the shot is blocked or missed.</div>
+      <div class="result"><strong>Spacing:</strong>
+        Modeled separation at release: ${state.releaseGap.toFixed(1)} ft.</div>
+      <div class="result"><strong>Vision geometry:</strong>
+        Defender starts ${state.outsideCone ? "outside" : "inside"}
+        the selected cone. Actual awareness cannot be inferred.</div>
+      <div class="result"><strong>Balance:</strong>
+        You entered ${p.balance}% retention. No balance change is calculated.</div>
+      <div class="result"><strong>Solo-to-pressure timing change:</strong>
+        ${state.timingChange >= 0 ? "+" : ""}${state.timingChange.toFixed(2)} s.
+        The reason for this difference is unknown.</div>`;
+
+    $("formula").textContent =
+      `Boundary arrival = max(0, distance − boundary) ÷ speed.
+       Here: max(0, ${p.distance} − ${p.radius}) ÷ ${p.speed}.
+       Release separation = max(0, distance − speed × pressured release time).
+       Zero speed means no arrival unless already inside the boundary.`;
+
+    draw(state);
+    if (drillsGenerated) generateDrills();
+  }
+
+  function draw(p) {
+    const cx = 300, cy = 240, scale = 7;
+    const point = (distance, degrees) => {
+      const a = degrees * Math.PI / 180;
+      return [cx + Math.sin(a) * distance * scale,
+              cy - Math.cos(a) * distance * scale];
+    };
+    const start = point(p.distance, p.angle);
+    const finish = point(p.releaseGap, p.angle);
+    const left = point(26, -p.vision / 2);
+    const right = point(26, p.vision / 2);
+
+    $("cone").setAttribute("d",
+      `M${cx},${cy} L${left[0]},${left[1]}
+       A182,182 0 0 1 ${right[0]},${right[1]} Z`);
+    $("boundary").setAttribute("r", p.radius * scale);
+    [["start", start], ["finish", finish]].forEach(([id, pos]) => {
+      $(id).setAttribute("cx", pos[0]);
+      $(id).setAttribute("cy", pos[1]);
+    });
+    ["x1", "y1", "x2", "y2"].forEach((attr, i) =>
+      $("route").setAttribute(attr, [...start, ...finish][i]));
+  }
+
+  function generateDrills() {
+    drillsGenerated = true;
+    const p = state;
+    const suggestions = [];
+
+    if (p.margin < 0 || p.timingChange > 0.1) {
+      suggestions.push([
+        "Compare comfortable and time-limited releases",
+        "At a comfortable distance, record small blocks of self-toss shots. " +
+        "Compare your normal rhythm with a gentle timing cue. Do not force a " +
+        "fixed release target or sacrifice comfort.",
+        "Track catch-to-release time, makes/attempts, and perceived rushing. " +
+        "Retest later without the cue. Faster alone does not mean better."
+      ]);
+    }
+
+    if (p.outsideCone) {
+      suggestions.push([
+        "Notice the cue before choosing",
+        "Use a stationary display with randomized left/right cues. " +
+        "Read the cue first, then perform a controlled action in clear space. " +
+        "Do not look at a screen while jumping or moving at speed.",
+        "Track missed cues and correct choices. This tests a cue task—not " +
+        "game awareness. A later partner drill is needed to test live reads."
+      ]);
+    }
+
+    if (p.balance < 75) {
+      suggestions.push([
+        "Compare your own balance across conditions",
+        "Film comfortable stationary shots and controlled step-in shots " +
+        "from the same location. Use the same self-rating question after " +
+        "each block. Avoid contact or aggressive perturbations.",
+        "Compare your ratings and review clips. The 75% trigger is a demo " +
+        "rule, not a clinical or coaching threshold. Stop if discomfort occurs."
+      ]);
+    }
+
+    if (!suggestions.length) {
+      suggestions.push([
+        "Check the scenario against real observations",
+        "Record a short solo block. If a willing partner is available, " +
+        "repeat with controlled, non-contact closeouts from a marked distance.",
+        "Review actual release timing and separation. Check whether the " +
+        "constant-speed assumption resembles the footage before trusting it."
+      ]);
+    }
+
+    $("drills").innerHTML = suggestions.map(([title, setup, test]) => `
+      <article class="drill">
+        <h3>${title}</h3>
+        <p><strong>Try:</strong> ${setup}</p>
+        <p><strong>Check:</strong> ${test}</p>
+      </article>`).join("");
+  }
+
+  ids.forEach(id => $(id).addEventListener("input", update));
+  $("generate").addEventListener("click", generateDrills);
+  update();
+</script>
+</body>
+</html>
