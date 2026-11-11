@@ -83,7 +83,9 @@ roadmap: 06_roadmap.md
 
 **Why one area first (systems reason):** each area needs its own validated content library and coach review. Opening all at once would spread a small review capacity across every area, so none gets proven. The first area proves the method; the rest reuse it.
 
-**In (built in this order, by hand first):**
+**Order revised 2026-11-11 (founder):** the film feature on the player's own clips comes first, then "one focus before practice." Practice-to-Game and One Cue move to later. The list below is the earlier order, kept for the record; the current order lives in `06_roadmap.md` §3.
+
+**In (earlier order, by hand first):**
 1. **Feature 01, Practice-to-Game** (closeout situation): BR-1, BR-4, BR-5, BR-6
 2. **Feature 05, One Cue**: BR-5, BR-6 (no video needed)
 3. **Feature 02, Read Before React** on the player's own film: BR-2, BR-3
